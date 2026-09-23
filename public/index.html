@@ -1,12 +1,395 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Golden Circle</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<title>Golden Circle Task Manager</title>
+
+<link rel="stylesheet" href="style.css">
+
 </head>
 
 <body>
-<h1>Golden Circle Task Manager</h1>
-<p>Application is running successfully.</p>
+
+<!-- LOGIN -->
+
+<div id="loginPage">
+
+<div class="login-card">
+
+<h1>Golden Circle</h1>
+<p>Task Management Platform</p>
+
+<input id="phone" placeholder="Phone Number">
+
+<input id="password" 
+type="password"
+placeholder="Password">
+
+<button onclick="login()">
+Login
+</button>
+
+<div id="loginError"></div>
+
+</div>
+
+</div>
+
+
+
+<!-- APPLICATION -->
+
+<div id="appPage" style="display:none">
+
+
+<div class="sidebar">
+
+<h2>◉ Golden Circle</h2>
+
+
+<button onclick="showPage('dashboard')">
+🏠 Dashboard
+</button>
+
+<button onclick="showPage('tasks')">
+✅ Tasks
+</button>
+
+
+<button onclick="showPage('companies')">
+🏢 Companies
+</button>
+
+
+<button onclick="showPage('users')">
+👥 Users
+</button>
+
+
+<button onclick="showPage('messages')">
+💬 Messages
+</button>
+
+
+<button onclick="showPage('ai')">
+🤖 Golden AI
+</button>
+
+
+</div>
+
+
+
+
+<div class="main">
+
+
+<header>
+
+<h2 id="pageTitle">
+Dashboard
+</h2>
+
+<div>
+🔔
+</div>
+
+</header>
+
+
+
+<!-- DASHBOARD -->
+
+<section id="dashboard">
+
+
+<div class="cards">
+
+
+<div class="card">
+<h3>Total Tasks</h3>
+<span id="totalTasks">0</span>
+</div>
+
+
+<div class="card">
+<h3>Open</h3>
+<span id="openTasks">0</span>
+</div>
+
+
+<div class="card">
+<h3>Completed</h3>
+<span id="completedTasks">0</span>
+</div>
+
+
+<div class="card">
+<h3>Companies</h3>
+<span id="companyCount">0</span>
+</div>
+
+
+</div>
+
+
+<div class="panel">
+
+<h3>Recent Tasks</h3>
+
+<table>
+
+<thead>
+<tr>
+<th>Code</th>
+<th>Company</th>
+<th>Status</th>
+<th>Owner</th>
+</tr>
+</thead>
+
+<tbody id="dashboardTasks">
+
+</tbody>
+
+</table>
+
+
+</div>
+
+
+</section>
+
+
+
+
+
+<!-- TASKS -->
+
+<section id="tasks"
+style="display:none">
+
+
+<div class="panel">
+
+<h3>Create Task</h3>
+
+
+<input id="taskCompany"
+placeholder="Company">
+
+
+<input id="taskTitle"
+placeholder="Task description">
+
+
+<select id="taskStatus">
+
+<option>
+Open
+</option>
+
+<option>
+In Progress
+</option>
+
+<option>
+Completed
+</option>
+
+</select>
+
+
+<button onclick="createTask()">
+Create Task
+</button>
+
+
+</div>
+
+
+<div class="panel">
+
+<h3>All Tasks</h3>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>ID</th>
+<th>Task</th>
+<th>Status</th>
+<th>Action</th>
+
+</tr>
+
+</thead>
+
+
+<tbody id="taskTable">
+
+</tbody>
+
+
+</table>
+
+
+</div>
+
+
+</section>
+
+
+
+
+
+
+<!-- COMPANIES -->
+
+
+<section id="companies"
+style="display:none">
+
+
+<div class="panel">
+
+<h3>Companies</h3>
+
+<table>
+
+<thead>
+
+<tr>
+<th>Name</th>
+</tr>
+
+</thead>
+
+
+<tbody id="companyTable">
+
+</tbody>
+
+
+</table>
+
+</div>
+
+
+</section>
+
+
+
+
+
+<!-- USERS -->
+
+<section id="users"
+style="display:none">
+
+
+<div class="panel">
+
+<h3>Users</h3>
+
+<table>
+
+<tbody id="userTable">
+
+</tbody>
+
+</table>
+
+</div>
+
+
+</section>
+
+
+
+
+
+<!-- MESSAGES -->
+
+
+<section id="messages"
+style="display:none">
+
+
+<div class="panel">
+
+<h3>Messages</h3>
+
+<div id="messageBox">
+
+</div>
+
+
+</div>
+
+
+</section>
+
+
+
+
+
+
+<!-- AI -->
+
+<section id="ai"
+style="display:none">
+
+
+<div class="panel ai">
+
+
+<h2>
+🤖 Golden AI Assistant
+</h2>
+
+
+<p>
+Ask me about tasks, delays, priorities and updates.
+</p>
+
+
+<input id="aiInput"
+placeholder="Example: Give today's update">
+
+
+<button onclick="askAI()">
+Ask
+</button>
+
+
+<div id="aiResponse">
+
+</div>
+
+
+</div>
+
+
+</section>
+
+
+
+
+</div>
+
+
+</div>
+
+
+
+<script src="app.js"></script>
+
+
 </body>
 
 </html>

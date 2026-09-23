@@ -1,68 +1,21 @@
-let token = localStorage.getItem("token");
-
-function login(){
- const phone=document.getElementById('phone').value;
- const password=document.getElementById('password').value;
- fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password})})
- .then(r=>r.json()).then(d=>{if(d.token){token=d.token;localStorage.setItem('token',token);openApp()}else document.getElementById('loginError').innerHTML='Invalid login'})
-}
-
-function openApp(){
- document.getElementById('loginPage').style.display='none';
- document.getElementById('appPage').style.display='flex';
- loadDashboard();
-}
-
-function authHeaders(){return {'Content-Type':'application/json','Authorization':'Bearer '+token}}
-
-function showPage(page){
- document.querySelectorAll('.main section').forEach(x=>x.style.display='none');
- document.getElementById(page).style.display='block';
- document.getElementById('pageTitle').innerHTML=page.toUpperCase();
- if(page==='dashboard')loadDashboard();
- if(page==='tasks')loadTasks();
- if(page==='companies')loadCompanies();
- if(page==='users')loadUsers();
-}
-
-function loadDashboard(){
- fetch('/api/tasks',{headers:authHeaders()}).then(r=>r.json()).then(data=>{
- let tasks=data.rows||data||[];
- totalTasks.innerHTML=tasks.length;
- openTasks.innerHTML=tasks.filter(t=>t.status!=='Completed').length;
- completedTasks.innerHTML=tasks.filter(t=>t.status==='Completed').length;
- dashboardTasks.innerHTML=tasks.slice(0,10).map(t=>`<tr><td>${t.task_code||t.id}</td><td>${t.company||''}</td><td>${t.status}</td><td>${t.assignee||''}</td></tr>`).join('');
- });
-}
-
-function loadTasks(){
- fetch('/api/tasks',{headers:authHeaders()}).then(r=>r.json()).then(data=>{
- let tasks=data.rows||data||[];
- taskTable.innerHTML=tasks.map(t=>`<tr><td>${t.id}</td><td>${t.task_code||''}</td><td>${t.status}</td><td><button onclick="updateTask(${t.id})">Update</button></td></tr>`).join('');
- });
-}
-
-function createTask(){
- let company=document.getElementById('taskCompany').value;
- let description=document.getElementById('taskTitle').value;
- let status=document.getElementById('taskStatus').value;
- fetch('/api/tasks',{method:'POST',headers:authHeaders(),body:JSON.stringify({company,description,status})})
- .then(()=>{loadTasks();loadDashboard();alert('Task created successfully')})
-}
-
-function updateTask(id){
- fetch('/api/tasks/'+id,{method:'PATCH',headers:authHeaders(),body:JSON.stringify({status:'Completed'})}).then(()=>{loadTasks();loadDashboard()})
-}
-
-function loadCompanies(){
- fetch('/api/companies',{headers:authHeaders()}).then(r=>r.json()).then(d=>companyTable.innerHTML=(d||[]).map(c=>`<tr><td>${c.name}</td></tr>`).join(''))
-}
-function loadUsers(){
- fetch('/api/users',{headers:authHeaders()}).then(r=>r.json()).then(d=>userTable.innerHTML=(d||[]).map(u=>`<tr><td>${u.name}</td></tr>`).join(''))
-}
-function askAI(){
- let q=document.getElementById('aiInput').value;
- aiResponse.innerHTML='Golden AI analysing: '+q+'<br><br>Next version will connect this assistant with task database.';
-}
-
-if(token) window.onload=openApp;
+let token=localStorage.getItem('token'),me=null,allTasks=[],companies=[],users=[];
+const $=id=>document.getElementById(id); const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+async function api(url,opt={}){opt.headers={...(opt.headers||{}),'Content-Type':'application/json',...(token?{'Authorization':'Bearer '+token}:{})};const r=await fetch(url,opt);if(r.status===401){logout();throw Error('Please sign in again')};let d={};try{d=await r.json()}catch{}if(!r.ok)throw Error(d.error||'Request failed');return d}
+async function login(){try{const d=await api('/api/login',{method:'POST',body:JSON.stringify({phone:$('phone').value.trim(),password:$('password').value})});token=d.token;me=d.user;localStorage.setItem('token',token);openApp()}catch(e){$('loginError').textContent=e.message}}
+function logout(){localStorage.removeItem('token');token=null;location.reload()}
+async function openApp(){$('loginPage').style.display='none';$('appPage').style.display='block';try{me=me||await api('/api/me');$('userName').textContent=me.name;$('welcomeName').textContent=me.name.split(' ')[0];await Promise.all([loadCompanies(),loadUsersSafe()]);showPage('dashboard');loadNotifications()}catch(e){console.error(e)}}
+function showPage(page){document.querySelectorAll('.main section').forEach(x=>x.style.display='none');$(page).style.display='block';document.querySelectorAll('.sidebar nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));$('pageTitle').textContent={dashboard:'Executive Dashboard',tasks:'Task Management',companies:'Companies',users:'Users & Access',messages:'Messages',ai:'Golden AI'}[page];if(page==='dashboard')loadDashboard();if(page==='tasks')loadTasks();if(page==='companies')renderCompanies();if(page==='users')loadUsersSafe();if(page==='messages')loadMessages()}
+async function loadCompanies(){companies=await api('/api/companies');$('taskCompany').innerHTML='<option value="">Select company</option>'+companies.map(c=>'<option value="'+c.id+'">'+esc(c.name)+'</option>').join('');renderCompanies()}
+async function loadUsersSafe(){try{users=await api('/api/users');$('taskAssignee').innerHTML='<option value="">Assign to</option>'+users.filter(u=>u.active).map(u=>'<option value="'+u.id+'">'+esc(u.name)+'</option>').join('');$('userTable').innerHTML=users.map(u=>'<tr><td>'+esc(u.name)+'</td><td>'+esc(u.phone)+'</td><td>'+esc(u.role)+'</td><td>'+(u.active?'Active':'Disabled')+'</td></tr>').join('')}catch(e){users=me?[me]:[];$('taskAssignee').innerHTML=users.map(u=>'<option value="'+u.id+'">'+esc(u.name)+'</option>').join('');$('userTable').innerHTML='<tr><td colspan="4" class="muted">Admin access required.</td></tr>'}}
+async function loadTasks(){allTasks=await api('/api/tasks');renderTasks()}
+function renderTasks(){const q=($('taskSearch')?.value||'').toLowerCase();const a=allTasks.filter(t=>[t.task_code,t.task_name,t.company,t.assignee,t.status,t.priority].join(' ').toLowerCase().includes(q));$('taskTable').innerHTML=a.map(t=>'<tr><td><b>'+esc(t.task_code)+'</b></td><td>'+esc(t.task_name)+'</td><td>'+esc(t.company)+'</td><td>'+esc(t.assignee)+'</td><td><span class="badge '+esc(t.priority||'Medium')+'">'+esc(t.priority||'Medium')+'</span></td><td>'+esc(t.status)+'</td><td class="'+(t.overdue?'overdue':'')+'">'+esc(t.end_date?String(t.end_date).slice(0,10):'—')+'</td><td><button class="ghost" onclick="cycleStatus('+t.id+',\''+esc(t.status)+'\')">Update</button></td></tr>').join('')||'<tr><td colspan="8" class="muted">No tasks found.</td></tr>'}
+async function loadDashboard(){allTasks=await api('/api/tasks');const total=allTasks.length,completed=allTasks.filter(t=>t.status==='Completed').length,progress=allTasks.filter(t=>t.status==='In Progress').length,over=allTasks.filter(t=>t.overdue).length,due=allTasks.filter(t=>t.due_soon).length;$('totalTasks').textContent=total;$('completedTasks').textContent=completed;$('progressTasks').textContent=progress;$('openTasks').textContent=total-completed;$('overdueTasks').textContent=over;$('dueSoonTasks').textContent=due;$('dashboardTasks').innerHTML=allTasks.slice(0,8).map(t=>'<tr><td><b>'+esc(t.task_code)+'</b></td><td>'+esc(t.task_name)+'</td><td>'+esc(t.company)+'</td><td>'+esc(t.assignee)+'</td><td><span class="badge '+esc(t.priority||'Medium')+'">'+esc(t.priority||'Medium')+'</span></td><td>'+esc(t.status)+'</td><td class="'+(t.overdue?'overdue':'')+'">'+esc(t.end_date?String(t.end_date).slice(0,10):'—')+'</td></tr>').join('');drawBars('priorityBars',['Critical','High','Medium','Low'].map(k=>[k,allTasks.filter(t=>(t.priority||'Medium')===k).length]),total);drawBars('companyBars',companies.map(c=>[c.name,allTasks.filter(t=>t.company===c.name).length]).sort((a,b)=>b[1]-a[1]).slice(0,6),total)}
+function drawBars(id,arr,total){$(id).innerHTML=arr.map(([n,v])=>'<div class="barrow"><span>'+esc(n)+'</span><div class="bar"><i style="width:'+Math.round((v/(total||1))*100)+'%"></i></div><b>'+v+'</b></div>').join('')}
+async function createTask(){const body={company_id:+$('taskCompany').value,assigned_to:+$('taskAssignee').value,task_name:$('taskTitle').value.trim(),priority:$('taskPriority').value,start_date:$('taskStart').value||null,end_date:$('taskDue').value||null,status:$('taskStatus').value,admin_remarks:$('taskRemarks').value.trim()};if(!body.company_id||!body.assigned_to||!body.task_name)return alert('Company, task title and assignee are required.');try{await api('/api/tasks',{method:'POST',body:JSON.stringify(body)});$('taskTitle').value='';$('taskRemarks').value='';await loadTasks();alert('Task created successfully')}catch(e){alert(e.message)}}
+async function cycleStatus(id,status){const next=status==='Not Started'?'In Progress':status==='In Progress'?'Completed':'Not Started';try{await api('/api/tasks/'+id,{method:'PATCH',body:JSON.stringify({status:next,change_note:'Status changed to '+next})});await loadTasks()}catch(e){alert(e.message)}}
+function renderCompanies(){if(!$('companyCards'))return;const counts={};allTasks.forEach(t=>counts[t.company]=(counts[t.company]||0)+1);$('companyCards').innerHTML=companies.map(c=>'<div class="companybox"><b>'+esc(c.name)+'</b><span>'+(counts[c.name]||0)+' tasks</span></div>').join('')}
+async function createUser(){try{await api('/api/users',{method:'POST',body:JSON.stringify({name:$('newUserName').value,phone:$('newUserPhone').value,password:$('newUserPassword').value,role:$('newUserRole').value})});await loadUsersSafe();alert('User created')}catch(e){alert(e.message)}}
+async function loadMessages(){try{const d=await api('/api/messages');$('messageBox').innerHTML=d.map(m=>'<div class="companybox"><b>'+esc(m.sender_name)+' → '+esc(m.receiver_name)+'</b><span>'+esc(m.body)+'</span></div>').join('')||'<p class="muted">No messages yet.</p>'}catch(e){$('messageBox').textContent=e.message}}
+async function loadNotifications(){try{const d=await api('/api/notifications');$('notificationCount').textContent=d.filter(n=>!n.read_at).length}catch{}}
+function askAI(){const q=$('aiInput').value.toLowerCase(),open=allTasks.filter(t=>t.status!=='Completed'),over=open.filter(t=>t.overdue),critical=open.filter(t=>(t.priority||'Medium')==='Critical'),due=open.filter(t=>t.due_soon);$('aiResponse').innerHTML='<h3>Executive Summary</h3><p><b>'+open.length+'</b> open tasks · <b>'+over.length+'</b> overdue · <b>'+critical.length+'</b> critical · <b>'+due.length+'</b> due soon.</p>'+(over.length?'<h4>Immediate attention</h4>'+over.slice(0,5).map(t=>'<p>• <b>'+esc(t.task_code)+'</b> '+esc(t.task_name)+' — '+esc(t.assignee)+'</p>').join(''):'<p>No overdue tasks currently.</p>')+'<p class="muted">This summary is generated from the live task database.</p>'}
+if(token)window.addEventListener('load',openApp);

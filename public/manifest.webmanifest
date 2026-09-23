@@ -1,7 +1,7 @@
 {
-  "name": "Golden Circle Task Manager",
-  "short_name": "Golden Circle",
-  "description": "Executive task management platform",
+  "name": "Golden Circle Tasks",
+  "short_name": "Golden Circle Tasks",
+  "description": "Executive Task Management",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -1,6 +1,7 @@
 const express=require('express'),pg=require('pg'),bcrypt=require('bcryptjs'),jwt=require('jsonwebtoken'),path=require('path');
 const app=express(); app.use(express.json()); app.use(express.static(path.join(__dirname,'public')));
 const { Pool } = require("pg");const pool = new Pool({connectionString: process.env.DATABASE_URL,ssl: { rejectUnauthorized: false }});
+console.log("DATABASE URL PRESENT:", !!process.env.DATABASE_URL);
 const SECRET=process.env.JWT_SECRET||'change-me';
 const companies=['Goluxigo','Partyclap','Opexminds','Propertylane','Dmccart','Claimreclaim','Swiftdocgo','Gopolicygo'];
 async function init(){

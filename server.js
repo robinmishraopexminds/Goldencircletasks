@@ -1,6 +1,6 @@
 const express=require('express'),pg=require('pg'),bcrypt=require('bcryptjs'),jwt=require('jsonwebtoken'),path=require('path');
 const app=express(); app.use(express.json()); app.use(express.static(path.join(__dirname,'public')));
-const pool=new pg.Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.NODE_ENV==='production'?{rejectUnauthorized:false}:false});
+const { Pool } = require("pg");const pool = new Pool({connectionString: process.env.DATABASE_URL,ssl: { rejectUnauthorized: fals }});
 const SECRET=process.env.JWT_SECRET||'change-me';
 const companies=['Goluxigo','Partyclap','Opexminds','Propertylane','Dmccart','Claimreclaim','Swiftdocgo','Gopolicygo'];
 async function init(){
